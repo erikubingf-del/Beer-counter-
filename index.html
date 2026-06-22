@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1208" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Beers" />
+  <title>Beer Counter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; -webkit-user-select: none; touch-action: manipulation; background: #1a1208; }
+    #tap-area { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 32%, #4a3210 0%, #1a1208 68%); color: #ffce54; cursor: pointer; transition: background 0.12s ease; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    #tap-area.flash { background: radial-gradient(circle at 50% 32%, #8a5a18 0%, #2a1c0c 68%); }
+    .glass { width: min(86vw, 520px); padding: 34px 26px 120px; border-radius: 34px; background: rgba(255, 206, 84, 0.06); border: 1px solid rgba(255, 206, 84, 0.18); box-shadow: 0 24px 80px rgba(0,0,0,0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); text-align: center; }
+    #title { font-size: 18px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.7; margin-bottom: 20px; }
+    #count { font-size: clamp(120px, 38vw, 230px); font-weight: 850; line-height: 0.9; letter-spacing: -0.06em; text-shadow: 0 4px 28px rgba(0,0,0,0.5); transition: transform 0.1s ease; }
+    #count.pop { transform: scale(1.12); }
+    #label { margin-top: 16px; font-size: clamp(28px, 7vw, 46px); font-weight: 700; opacity: 0.9; }
+    #hint { margin-top: 26px; font-size: 16px; opacity: 0.45; font-weight: 600; }
+    .controls { position: fixed; bottom: calc(env(safe-area-inset-bottom) + 18px); left: 0; right: 0; display: flex; gap: 14px; justify-content: center; z-index: 10; padding: 0 18px; }
+    .controls button { background: rgba(255,206,84,0.13); border: 1.5px solid rgba(255,206,84,0.38); color: #ffce54; font-size: 17px; font-weight: 700; padding: 14px 24px; border-radius: 16px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); min-width: 112px; }
+    .controls button:active { background: rgba(255,206,84,0.30); transform: translateY(1px); }
+    @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.6); } }
+    .float { position: fixed; font-size: 52px; pointer-events: none; animation: floatUp 0.9s ease-out forwards; z-index: 5; }
+  </style>
+</head>
+<body>
+  <main id="tap-area" aria-label="Tap anywhere to add one beer">
+    <section class="glass">
+      <div id="title">Beer Counter</div>
+      <div id="count">0</div>
+      <div id="label">beers</div>
+      <div id="hint">tap anywhere to add</div>
+    </section>
+  </main>
+  <div class="controls">
+    <button id="undo" type="button">↩ Undo</button>
+    <button id="reset" type="button">Reset</button>
+  </div>
+  <script>
+    const STORAGE_KEY = "beer-count";
+    const tapArea = document.getElementById("tap-area");
+    const countEl = document.getElementById("count");
+    const labelEl = document.getElementById("label");
+    const undoBtn = document.getElementById("undo");
+    const resetBtn = document.getElementById("reset");
+    let count = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+    if (isNaN(count) || count < 0) count = 0;
+    function save() { localStorage.setItem(STORAGE_KEY, String(count)); }
+    function render() { countEl.textContent = count; labelEl.textContent = count === 1 ? "beer" : "beers"; }
+    function buzz(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+    function pop() { countEl.classList.remove("pop"); void countEl.offsetWidth; countEl.classList.add("pop"); tapArea.classList.add("flash"); setTimeout(() => tapArea.classList.remove("flash"), 120); }
+    function floatEmoji(x, y) { const el = document.createElement("div"); el.className = "float"; el.textContent = "🍺"; el.style.left = (x - 26) + "px"; el.style.top = (y - 26) + "px"; document.body.appendChild(el); setTimeout(() => el.remove(), 900); }
+    function addBeer(x, y) { count++; save(); render(); pop(); buzz(15); if (x != null && y != null) floatEmoji(x, y); }
+    tapArea.addEventListener("pointerdown", (e) => addBeer(e.clientX, e.clientY));
+    undoBtn.addEventListener("click", (e) => { e.stopPropagation(); if (count > 0) { count--; save(); render(); buzz(10); } });
+    resetBtn.addEventListener("click", (e) => { e.stopPropagation(); if (count === 0) return; if (confirm("Reset the beer count to 0?")) { count = 0; save(); render(); buzz([10,40,10]); } });
+    render();
+  </script>
+</body>
+</html>
